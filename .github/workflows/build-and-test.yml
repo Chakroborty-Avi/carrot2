@@ -18,7 +18,7 @@ on:
       jdk-version:
         type: string
         required: true
-        description: "JDK version to use." 
+        description: "JDK version to use."
 
       run-tests:
         description: "Run tests"
@@ -35,24 +35,29 @@ jobs:
       CI: true
 
     steps:
-      - uses: carrotsearch/infra-public/.github/actions/prepare-git-clone@master
-        with:
-          token: ${{ secrets.GH_ACCESS_TOKEN }}
+    - uses: carrotsearch/infra-public/.github/actions/prepare-git-clone@master
+      with:
+        token: ${{ secrets.GH_ACCESS_TOKEN }}
 
-      - uses: carrotsearch/infra-public/.github/actions/prepare-gradle-build@master
-        with:
-          jdk-version: ${{ inputs.jdk-version }}
+    - uses: carrotsearch/infra-public/.github/actions/prepare-gradle-build@master
+      with:
+        jdk-version: ${{ inputs.jdk-version }}
 
-      - name: Validation checks (gradle check -x test)
-        run: ./gradlew --max-workers 4 check -x test "-Ptasks.times=true" ${{ inputs.gradle-options }}
+    - name: Validation checks (gradle check -x test)
+      run: ./gradlew --max-workers 4 check -x test "-Ptasks.times=true" ${{ inputs.gradle-options }}
 
-      - name: Tests and assembly (./gradlew ... check)
-        if: ${{ inputs.run-tests }}
-        run: ./gradlew --max-workers 4 check assemble "-Ptasks.times=true" ${{ inputs.gradle-options }}
+    - name: Tests and assembly (./gradlew ... check)
+      if: ${{ inputs.run-tests }}
+      run: ./gradlew --max-workers 4 check assemble "-Ptasks.times=true" ${{ inputs.gradle-options }}
 
-      - name: Store failed test outputs
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: failed-test-outputs-jdk${{ inputs.jdk-version }}-os${{ inputs.os }}
-          path: '**/OUTPUT-*.txt'
+    - name: Store failed test outputs
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: failed-test-outputs-jdk${{ inputs.jdk-version }}-os${{ inputs.os }}
+        path: '**/OUTPUT-*.txt'
+    - name: Upload strace artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: strace-logs-${{ github.job }}-${{ matrix.flavor || 'lint' }}-${{ github.run_id }}-${{ github.run_attempt }}-${{ strategy.job-index || 0 }}
+        path: /home/runner/strace_logs/
